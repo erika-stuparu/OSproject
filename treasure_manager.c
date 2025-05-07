@@ -1,35 +1,4 @@
-g#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <time.h>
-#include <errno.h>
-
-
-
-
-#ifndef TREASURE_H
-#define TREASURE_H
-
-#define MAX_USENAME 32
-#define MAX_CLUE 128
-#define TREASURE_FILE "treasures.dat"
-#define LOG_FILE "logged_hunt"
-
-typedef struct{
-    int id;
-    char username[MAX_USENAME];
-    float latitude;
-    float longitude;
-    char clue[MAX_CLUE];
-    int value;
-}Treasure;
-
-#endif
+#include "treasure.h"
 
 
 
@@ -210,10 +179,11 @@ int main(int argc, char *argv[]){
 
     if(strcmp(operation, "add")==0){
         return add_treasure(hunt_id);
-    }else if(strcmp(operation, "list")==0){
+    }else if(strcmp(operation, "list")==0 || strcmp(operation, "list_treasures") == 0){
         return list_treasures(hunt_id);
-    }else if(strcmp(operation, "view")==0){
+    }else if(strcmp(operation, "view")==0 || strcmp(operation, "view_treasure") == 0){
         return view_treasure(hunt_id, atoi(argv[3]));
+    
     }else if(strcmp(operation, "remove_treasure")==0&&argc==4){
         return remove_treasure(hunt_id, atoi(argv[3]));
     }else if(strcmp(operation, "remove_hunt")==0){
