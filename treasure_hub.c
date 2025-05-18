@@ -3,6 +3,7 @@
 pid_t monitor_pid = 0;
 int shutdown = 0;
 int stop = 0;
+int monitor_pipe[2];
 
 void monitor_exit(int sig){
     int status;
@@ -41,6 +42,12 @@ void signal_monitor(int sig_number){
 }
     
 pid_t start_monitor(void) {
+
+    if (pipe(monitor_pipe) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
     pid_t pid = fork();
     if (pid < 0) {
         perror("Error starting monitor process");
@@ -48,6 +55,9 @@ pid_t start_monitor(void) {
     }
 
     if (pid == 0) {
+        close(monitor_pipe[0]); 
+        dup2(monitor_pipe[1], STDOUT_FILENO);
+        close(monitor_pipe[1]);
         struct sigaction sa_usr1 = {0}, sa_usr2 = {0};
         sigset_t wait_mask;
 
@@ -101,6 +111,7 @@ pid_t start_monitor(void) {
                            strncmp(file_cmd, "view_treasures", 4) == 0) {
                     char full_cmd[512];
                     snprintf(full_cmd, sizeof(full_cmd), "./treasure_manager %s", file_cmd);
+                    fflush(stdout);
                     system(full_cmd);
                 } else {
                     printf("Unknown command: %s\n", file_cmd);
@@ -115,6 +126,7 @@ pid_t start_monitor(void) {
         exit(0);
     }
 
+    close(monitor_pipe[1]);
     return pid;
 }
 
@@ -131,45 +143,58 @@ int main(void) {
         input[strcspn(input, "\n")] = 0;
 
         if (stop && strcmp(input, "exit") != 0) {
-            printf("Monitor is shutting down. \n");
-        } else if (strcmp(input, "start_monitor") == 0) {
+            printf("Monitor is shutting down.\n");
+        } 
+        else if (strcmp(input, "start_monitor") == 0) {
             if (monitor_pid) {
                 printf("Monitor already running (PID %d)\n", monitor_pid);
             } else {
                 monitor_pid = start_monitor();
                 printf("Monitor started (PID %d)\n", monitor_pid);
             }
-        } else if (strcmp(input, "stop_monitor") == 0) {
+        } 
+        else if (strcmp(input, "stop_monitor") == 0) {
             if (!monitor_pid) {
                 printf("No monitor is running.\n");
             } else {
                 signal_monitor(SIGUSR2);
                 printf("Monitor shutting down.\n");
             }
-        } else if (strcmp(input, "exit") == 0) {
+        } 
+        else if (strcmp(input, "exit") == 0) {
             if (monitor_pid) {
                 printf("Cannot exit while monitor is running.\n");
             } else {
                 break;
             }
-        } else if (strncmp(input, "list_hunts", 10) == 0 ||
-                   strncmp(input, "list_treasures", 14) == 0 ||
-                   strncmp(input, "view_treasure", 13) == 0) {
+        } 
+        else if (strncmp(input, "list_hunts", strlen("list_hunts")) == 0 ||
+                 strncmp(input, "list_treasures", strlen("list_treasures")) == 0 ||
+                 strncmp(input, "view_treasure", strlen("view_treasure")) == 0) {
+
             if (!monitor_pid) {
                 printf("Monitor not running. Use start_monitor first.\n");
             } else {
                 save_command(input);
                 signal_monitor(SIGUSR1);
+
+                usleep(200000);
+
+                char buf[512];
+                ssize_t bytes;
+                while ((bytes = read(monitor_pipe[0], buf, sizeof(buf) - 1)) > 0) {
+                    buf[bytes] = '\0';
+                    printf("%s", buf);
+                    if (bytes < sizeof(buf) - 1) break;
+                }
             }
-        } else {
+        } 
+        else {
             printf("Unknown command: %s\n", input);
         }
 
         printf("treasure_hub> ");
     }
 
-
     return 0;
 }
-
-    

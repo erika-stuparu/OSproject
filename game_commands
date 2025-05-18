@@ -1,0 +1,22 @@
+make
+
+./treasure_manager add game1
+
+./treasure_manager list game1 (1)
+./treasure_manager view game1 (1)
+
+./treasure_manager remove_hunt game1
+
+./treasure_hub 
+
+start_monitor
+list_hunts
+list_treasures gameID
+view_treasure gameID treasureID
+stop_monitor
+exit
+
+./score_calculator game1 
+
+make clean 
+make rebuild

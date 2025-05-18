@@ -1,1 +1,1 @@
-view_treasure game1 102
+view_treasure game2 1
